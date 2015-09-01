@@ -1,0 +1,14 @@
+.cproject
+.project
+
+app/appclient
+app/appserver
+app/recvfile
+app/sendfile
+app/test
+app/*.o
+
+src/libudt.a
+src/libudt.so
+src/udt
+src/*.o
