@@ -693,7 +693,7 @@ int CUDTUnited::connect(const UDTSOCKET u, const sockaddr* name, int namelen) {
     s->m_Status = CONNECTING;
     try {
         s->m_pUDT->connect(name);
-    } catch (CUDTException e) {
+    } catch (CUDTException &e) {
         s->m_Status = OPENED;
         throw e;
     }
@@ -1237,9 +1237,8 @@ void CUDTUnited::updateMux(CUDTSocket* s, const sockaddr* addr, const UDPSOCKET*
     CGuard cg(m_ControlLock);
 
     if ((s->m_pUDT->m_bReuseAddr) && (NULL != addr)) {
-        int port =
-                (AF_INET == s->m_pUDT->m_iIPversion) ?
-                        ntohs(((sockaddr_in*) addr)->sin_port) : ntohs(((sockaddr_in6*) addr)->sin6_port);
+        int port = (AF_INET == s->m_pUDT->m_iIPversion) ?
+                ntohs(((sockaddr_in*) addr)->sin_port) : ntohs(((sockaddr_in6*) addr)->sin6_port);
 
         // find a reusable address
         for (map<int, CMultiplexer>::iterator i = m_mMultiplexer.begin(); i != m_mMultiplexer.end(); ++i) {
