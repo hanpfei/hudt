@@ -494,18 +494,31 @@ class CRcvQueue {
 };
 
 struct CMultiplexer {
-    CSndQueue* m_pSndQueue;	// The sending queue
-    CRcvQueue* m_pRcvQueue;	// The receiving queue
-    CChannel* m_pChannel;	// The UDP channel for sending and receiving
-    CTimer* m_pTimer;		// The timer
+    CSndQueue* m_pSndQueue;  // The sending queue
+    CRcvQueue* m_pRcvQueue;  // The receiving queue
+    CChannel* m_pChannel;    // The UDP channel for sending and receiving
+    CTimer* m_pTimer;        // The timer
 
-    int m_iPort;			// The UDP port number of this multiplexer
-    int m_iIPversion;		// IP version
-    int m_iMSS;			// Maximum Segment Size
-    int m_iRefCount;		// number of UDT instances that are associated with this multiplexer
-    bool m_bReusable;		// if this one can be shared with others
+    int m_iPort;             // The UDP port number of this multiplexer
+    int m_iIPversion;        // IP version
+    int m_iMSS;              // Maximum Segment Size
+    int m_iRefCount;         // number of UDT instances that are associated with this multiplexer
+    bool m_bReusable;        // if this one can be shared with others
 
-    int m_iID;			// multiplexer ID
+    int m_iID;               // multiplexer ID
+
+    CMultiplexer()
+            : m_pSndQueue(NULL),
+              m_pRcvQueue(NULL),
+              m_pChannel(NULL),
+              m_pTimer(NULL),
+              m_iPort(0),
+              m_iIPversion(0),
+              m_iMSS(0),
+              m_iRefCount(0),
+              m_bReusable(true),
+              m_iID(0) {
+    }
 };
 
 #endif

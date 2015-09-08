@@ -1236,6 +1236,7 @@ void CUDTUnited::checkTLSValue() {
 void CUDTUnited::updateMux(CUDTSocket* s, const sockaddr* addr, const UDPSOCKET* udpsock) {
     CGuard cg(m_ControlLock);
 
+    CMultiplexer m;
     if ((s->m_pUDT->m_bReuseAddr) && (NULL != addr)) {
         int port = (AF_INET == s->m_pUDT->m_iIPversion) ?
                 ntohs(((sockaddr_in*) addr)->sin_port) : ntohs(((sockaddr_in6*) addr)->sin6_port);
@@ -1246,57 +1247,56 @@ void CUDTUnited::updateMux(CUDTSocket* s, const sockaddr* addr, const UDPSOCKET*
                     && i->second.m_bReusable) {
                 if (i->second.m_iPort == port) {
                     // reuse the existing multiplexer
-                    ++i->second.m_iRefCount;
-                    s->m_pUDT->m_pSndQueue = i->second.m_pSndQueue;
-                    s->m_pUDT->m_pRcvQueue = i->second.m_pRcvQueue;
-                    s->m_iMuxID = i->second.m_iID;
-                    return;
+                    m = i->second;
+                    break;
                 }
             }
         }
     }
 
     // a new multiplexer is needed
-    CMultiplexer m;
-    m.m_iMSS = s->m_pUDT->m_iMSS;
-    m.m_iIPversion = s->m_pUDT->m_iIPversion;
-    m.m_iRefCount = 1;
-    m.m_bReusable = s->m_pUDT->m_bReuseAddr;
-    m.m_iID = s->m_SocketID;
+    if (m.m_iID == 0) {
+        m.m_iMSS = s->m_pUDT->m_iMSS;
+        m.m_iIPversion = s->m_pUDT->m_iIPversion;
+        m.m_bReusable = s->m_pUDT->m_bReuseAddr;
+        m.m_iID = s->m_SocketID;
 
-    m.m_pChannel = new CChannel(s->m_pUDT->m_iIPversion);
-    m.m_pChannel->setSndBufSize(s->m_pUDT->m_iUDPSndBufSize);
-    m.m_pChannel->setRcvBufSize(s->m_pUDT->m_iUDPRcvBufSize);
+        m.m_pChannel = new CChannel(s->m_pUDT->m_iIPversion);
+        m.m_pChannel->setSndBufSize(s->m_pUDT->m_iUDPSndBufSize);
+        m.m_pChannel->setRcvBufSize(s->m_pUDT->m_iUDPRcvBufSize);
 
-    try {
-        if (NULL != udpsock)
-            m.m_pChannel->open(*udpsock);
+        try {
+            if (NULL != udpsock)
+                m.m_pChannel->open(*udpsock);
+            else
+                m.m_pChannel->open(addr);
+        } catch (CUDTException& e) {
+            m.m_pChannel->close();
+            delete m.m_pChannel;
+            throw e;
+        }
+
+        sockaddr* sa =
+                (AF_INET == s->m_pUDT->m_iIPversion) ? (sockaddr*) new sockaddr_in : (sockaddr*) new sockaddr_in6;
+        m.m_pChannel->getSockAddr(sa);
+        m.m_iPort = (AF_INET == s->m_pUDT->m_iIPversion) ?
+                        ntohs(((sockaddr_in*) sa)->sin_port) : ntohs(((sockaddr_in6*) sa)->sin6_port);
+        if (AF_INET == s->m_pUDT->m_iIPversion)
+            delete (sockaddr_in*) sa;
         else
-            m.m_pChannel->open(addr);
-    } catch (CUDTException& e) {
-        m.m_pChannel->close();
-        delete m.m_pChannel;
-        throw e;
+            delete (sockaddr_in6*) sa;
+
+        m.m_pTimer = new CTimer;
+
+        m.m_pSndQueue = new CSndQueue;
+        m.m_pSndQueue->init(m.m_pChannel, m.m_pTimer);
+        m.m_pRcvQueue = new CRcvQueue;
+        m.m_pRcvQueue->init(32, s->m_pUDT->m_iPayloadSize, m.m_iIPversion, 1024, m.m_pChannel, m.m_pTimer);
+
+        m_mMultiplexer[m.m_iID] = m;
     }
 
-    sockaddr* sa = (AF_INET == s->m_pUDT->m_iIPversion) ? (sockaddr*) new sockaddr_in : (sockaddr*) new sockaddr_in6;
-    m.m_pChannel->getSockAddr(sa);
-    m.m_iPort = (AF_INET == s->m_pUDT->m_iIPversion) ?
-                    ntohs(((sockaddr_in*) sa)->sin_port) : ntohs(((sockaddr_in6*) sa)->sin6_port);
-    if (AF_INET == s->m_pUDT->m_iIPversion)
-        delete (sockaddr_in*) sa;
-    else
-        delete (sockaddr_in6*) sa;
-
-    m.m_pTimer = new CTimer;
-
-    m.m_pSndQueue = new CSndQueue;
-    m.m_pSndQueue->init(m.m_pChannel, m.m_pTimer);
-    m.m_pRcvQueue = new CRcvQueue;
-    m.m_pRcvQueue->init(32, s->m_pUDT->m_iPayloadSize, m.m_iIPversion, 1024, m.m_pChannel, m.m_pTimer);
-
-    m_mMultiplexer[m.m_iID] = m;
-
+    ++m.m_iRefCount;
     s->m_pUDT->m_pSndQueue = m.m_pSndQueue;
     s->m_pUDT->m_pRcvQueue = m.m_pRcvQueue;
     s->m_iMuxID = m.m_iID;
