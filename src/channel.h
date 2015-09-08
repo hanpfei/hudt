@@ -57,7 +57,6 @@ class CChannel {
     //    0) [in] addr: The local address that UDP will use.
     // Returned value:
     //    None.
-
     void open(const sockaddr* addr = NULL);
 
     // Functionality:
@@ -66,7 +65,6 @@ class CChannel {
     //    0) [in] udpsock: UDP socket descriptor.
     // Returned value:
     //    None.
-
     void open(UDPSOCKET udpsock);
 
     // Functionality:
@@ -75,7 +73,6 @@ class CChannel {
     //    None.
     // Returned value:
     //    None.
-
     void close() const;
 
     // Functionality:
@@ -84,7 +81,6 @@ class CChannel {
     //    None.
     // Returned value:
     //    Current UDP sending buffer size.
-
     int getSndBufSize();
 
     // Functionality:
@@ -93,7 +89,6 @@ class CChannel {
     //    None.
     // Returned value:
     //    Current UDP receiving buffer size.
-
     int getRcvBufSize();
 
     // Functionality:
@@ -102,7 +97,6 @@ class CChannel {
     //    0) [in] size: expected UDP sending buffer size.
     // Returned value:
     //    None.
-
     void setSndBufSize(int size);
 
     // Functionality:
@@ -111,7 +105,6 @@ class CChannel {
     //    0) [in] size: expected UDP receiving buffer size.
     // Returned value:
     //    None.
-
     void setRcvBufSize(int size);
 
     // Functionality:
@@ -120,17 +113,7 @@ class CChannel {
     //    0) [out] addr: pointer to store the returned socket address.
     // Returned value:
     //    None.
-
     void getSockAddr(sockaddr* addr) const;
-
-    // Functionality:
-    //    Query the peer side socket address that the channel is connect to.
-    // Parameters:
-    //    0) [out] addr: pointer to store the returned socket address.
-    // Returned value:
-    //    None.
-
-    void getPeerAddr(sockaddr* addr) const;
 
     // Functionality:
     //    Send a packet to the given address.
@@ -139,7 +122,6 @@ class CChannel {
     //    1) [in] packet: reference to a CPacket entity.
     // Returned value:
     //    Actual size of data sent.
-
     int sendto(const sockaddr* addr, CPacket& packet) const;
 
     // Functionality:
@@ -149,7 +131,6 @@ class CChannel {
     //    1) [in] packet: reference to a CPacket entity.
     // Returned value:
     //    Actual size of data received.
-
     int recvfrom(sockaddr* addr, CPacket& packet) const;
 
  private:

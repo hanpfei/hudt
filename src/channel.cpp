@@ -204,11 +204,6 @@ void CChannel::getSockAddr(sockaddr* addr) const {
     ::getsockname(m_iSocket, addr, &namelen);
 }
 
-void CChannel::getPeerAddr(sockaddr* addr) const {
-    socklen_t namelen = m_iSockAddrSize;
-    ::getpeername(m_iSocket, addr, &namelen);
-}
-
 int CChannel::sendto(const sockaddr* addr, CPacket& packet) const {
     // convert control information into network order
     if (packet.getFlag())
