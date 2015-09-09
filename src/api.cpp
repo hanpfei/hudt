@@ -45,11 +45,18 @@ written by
       #include <wspiapi.h>
    #endif
 #else
+   #include <cerrno>
    #include <unistd.h>
 #endif
 #include <cstring>
 #include "api.h"
 #include "core.h"
+
+#ifndef WIN32
+#define NET_ERROR errno
+#else
+#define NET_ERROR WSAGetLastError()
+#endif
 
 using namespace std;
 
@@ -453,16 +460,26 @@ UDTSTATUS CUDTUnited::getStatus(const UDTSOCKET u) {
     return i->second->m_Status;
 }
 
+int CUDTUnited::bind(CUDTSocket* s, const sockaddr* name, UDPSOCKET udpsock) {
+    CGuard cg(s->m_ControlLock);
+    // cannot bind a socket more than once
+    if (INIT != s->m_Status)
+        throw CUDTException(5, 0, 0);
+
+    s->m_pUDT->open();
+    updateMux(s, name, &udpsock);
+    s->m_Status = OPENED;
+
+    // copy address information of local node
+    s->m_pUDT->m_pSndQueue->m_pChannel->getSockAddr(s->m_pSelfAddr);
+
+    return 0;
+}
+
 int CUDTUnited::bind(const UDTSOCKET u, const sockaddr* name, int namelen) {
     CUDTSocket* s = locate(u);
     if (NULL == s)
         throw CUDTException(5, 4, 0);
-
-    CGuard cg(s->m_ControlLock);
-
-    // cannot bind a socket more than once
-    if (INIT != s->m_Status)
-        throw CUDTException(5, 0, 0);
 
     // check the size of SOCKADDR structure
     if (AF_INET == s->m_iIPversion) {
@@ -473,26 +490,25 @@ int CUDTUnited::bind(const UDTSOCKET u, const sockaddr* name, int namelen) {
             throw CUDTException(5, 3, 0);
     }
 
-    s->m_pUDT->open();
-    updateMux(s, name);
-    s->m_Status = OPENED;
+    UDPSOCKET socket = ::socket(s->m_iIPversion, SOCK_DGRAM, 0);
 
-    // copy address information of local node
-    s->m_pUDT->m_pSndQueue->m_pChannel->getSockAddr(s->m_pSelfAddr);
+#ifdef WIN32
+    if (INVALID_SOCKET == socket)
+#else
+    if (socket < 0)
+#endif
+        throw CUDTException(1, 0, NET_ERROR);
 
-    return 0;
+    if (0 != ::bind(socket, name, namelen))
+        throw CUDTException(1, 3, NET_ERROR);
+
+    return bind(s, name, socket);
 }
 
 int CUDTUnited::bind(UDTSOCKET u, UDPSOCKET udpsock) {
     CUDTSocket* s = locate(u);
     if (NULL == s)
         throw CUDTException(5, 4, 0);
-
-    CGuard cg(s->m_ControlLock);
-
-    // cannot bind a socket more than once
-    if (INIT != s->m_Status)
-        throw CUDTException(5, 0, 0);
 
     sockaddr_in name4;
     sockaddr_in6 name6;
@@ -510,14 +526,7 @@ int CUDTUnited::bind(UDTSOCKET u, UDPSOCKET udpsock) {
     if (-1 == ::getsockname(udpsock, name, &namelen))
         throw CUDTException(5, 3);
 
-    s->m_pUDT->open();
-    updateMux(s, name, &udpsock);
-    s->m_Status = OPENED;
-
-    // copy address information of local node
-    s->m_pUDT->m_pSndQueue->m_pChannel->getSockAddr(s->m_pSelfAddr);
-
-    return 0;
+    return bind(s, name, udpsock);
 }
 
 int CUDTUnited::listen(const UDTSOCKET u, int backlog) {

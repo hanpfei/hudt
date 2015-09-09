@@ -200,6 +200,7 @@ class CUDTUnited {
     CUDTException* getError();
 
  private:
+    int bind(CUDTSocket* s, const sockaddr* name, UDPSOCKET udpsock);
 //   void init();
 
  private:

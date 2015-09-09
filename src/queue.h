@@ -369,7 +369,6 @@ class CSndQueue {
     //    2) [in] t: Timer
     // Returned value:
     //    None.
-
     void init(CChannel* c, CTimer* t);
 
     // Functionality:
@@ -379,7 +378,6 @@ class CSndQueue {
     //    2) [in] packet: packet to be sent out
     // Returned value:
     //    Size of data sent out.
-
     int sendto(const sockaddr* addr, CPacket& packet);
 
  private:
