@@ -195,6 +195,8 @@ class CUDT {
 
     int recv(char* data, int len);
 
+    void waitBlockingSending(int space);
+
     // Functionality:
     //    send a message of a memory block "data" with size of "len".
     // Parameters:
@@ -318,14 +320,14 @@ class CUDT {
 
  private:
     // Status
+    bool m_bOpened;                              // If the UDT entity has been opened
     volatile bool m_bListening;                  // If the UDT entit is listening to connection
-    volatile bool m_bConnecting;			// The short phase when connect() is called but not yet completed
+    volatile bool m_bConnecting;                 // The short phase when connect() is called but not yet completed
     volatile bool m_bConnected;                  // Whether the connection is on or off
     volatile bool m_bClosing;                    // If the UDT entity is closing
     volatile bool m_bShutdown;                   // If the peer side has shutdown the connection
     volatile bool m_bBroken;                     // If the connection has been broken
     volatile bool m_bPeerHealth;                 // If the peer status is normal
-    bool m_bOpened;                              // If the UDT entity has been opened
     int m_iBrokenCounter;			// a counter (number of GC checks) to let the GC tag this socket as disconnected
 
     int m_iEXPCount;                             // Expiration counter
