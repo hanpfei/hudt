@@ -319,11 +319,7 @@ UDT_API int bind2(UDTSOCKET u, UDPSOCKET udpsock);
 UDT_API int listen(UDTSOCKET u, int backlog);
 UDT_API UDTSOCKET accept(UDTSOCKET u, struct sockaddr* addr, int* addrlen);
 UDT_API int connect(UDTSOCKET u, const struct sockaddr* name, int namelen);
-UDT_API int close(UDTSOCKET u);
-UDT_API int getpeername(UDTSOCKET u, struct sockaddr* name, int* namelen);
-UDT_API int getsockname(UDTSOCKET u, struct sockaddr* name, int* namelen);
-UDT_API int getsockopt(UDTSOCKET u, int level, SOCKOPT optname, void* optval, int* optlen);
-UDT_API int setsockopt(UDTSOCKET u, int level, SOCKOPT optname, const void* optval, int optlen);
+
 UDT_API int send(UDTSOCKET u, const char* buf, int len, int flags);
 UDT_API int recv(UDTSOCKET u, char* buf, int len, int flags);
 UDT_API int sendmsg(UDTSOCKET u, const char* buf, int len, int ttl = -1, bool inorder = false);
@@ -332,6 +328,14 @@ UDT_API int64_t sendfile(UDTSOCKET u, std::fstream& ifs, int64_t& offset, int64_
 UDT_API int64_t recvfile(UDTSOCKET u, std::fstream& ofs, int64_t& offset, int64_t size, int block = 7280000);
 UDT_API int64_t sendfile2(UDTSOCKET u, const char* path, int64_t* offset, int64_t size, int block = 364000);
 UDT_API int64_t recvfile2(UDTSOCKET u, const char* path, int64_t* offset, int64_t size, int block = 7280000);
+
+UDT_API int close(UDTSOCKET u);
+
+UDT_API int getpeername(UDTSOCKET u, struct sockaddr* name, int* namelen);
+UDT_API int getsockname(UDTSOCKET u, struct sockaddr* name, int* namelen);
+
+UDT_API int getsockopt(UDTSOCKET u, int level, SOCKOPT optname, void* optval, int* optlen);
+UDT_API int setsockopt(UDTSOCKET u, int level, SOCKOPT optname, const void* optval, int optlen);
 
 // select and selectEX are DEPRECATED; please use epoll. 
 UDT_API int select(int nfds, UDSET* readfds, UDSET* writefds, UDSET* exceptfds, const struct timeval* timeout);

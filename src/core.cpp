@@ -672,6 +672,21 @@ void CUDT::connect(const sockaddr* serv_addr) {
         throw e;
 }
 
+void CUDT::initCC() {
+    m_pCC = m_pCCFactory->create();
+    m_pCC->m_UDT = m_SocketID;
+    m_pCC->setMSS(m_iMSS);
+    m_pCC->setMaxCWndSize(m_iFlowWindowSize);
+    m_pCC->setSndCurrSeqNo(m_iSndCurrSeqNo);
+    m_pCC->setRcvRate(m_iDeliveryRate);
+    m_pCC->setRTT(m_iRTT);
+    m_pCC->setBandwidth(m_iBandwidth);
+    m_pCC->init();
+
+    m_ullInterval = (uint64_t) (m_pCC->m_dPktSndPeriod * m_ullCPUFrequency);
+    m_dCongestionWindow = m_pCC->m_dCWndSize;
+}
+
 int CUDT::connect(const CPacket& response) throw () {
     // this is the 2nd half of a connection request. If the connection is setup successfully this returns 0.
     // returning -1 means there is an error.
@@ -751,18 +766,7 @@ int CUDT::connect(const CPacket& response) throw () {
         m_iBandwidth = ib.m_iBandwidth;
     }
 
-    m_pCC = m_pCCFactory->create();
-    m_pCC->m_UDT = m_SocketID;
-    m_pCC->setMSS(m_iMSS);
-    m_pCC->setMaxCWndSize(m_iFlowWindowSize);
-    m_pCC->setSndCurrSeqNo(m_iSndCurrSeqNo);
-    m_pCC->setRcvRate(m_iDeliveryRate);
-    m_pCC->setRTT(m_iRTT);
-    m_pCC->setBandwidth(m_iBandwidth);
-    m_pCC->init();
-
-    m_ullInterval = (uint64_t) (m_pCC->m_dPktSndPeriod * m_ullCPUFrequency);
-    m_dCongestionWindow = m_pCC->m_dCWndSize;
+    initCC();
 
     // And, I am connected too.
     m_bConnecting = false;
@@ -844,18 +848,7 @@ void CUDT::connect(const sockaddr* peer, CHandShake* hs) {
         m_iBandwidth = ib.m_iBandwidth;
     }
 
-    m_pCC = m_pCCFactory->create();
-    m_pCC->m_UDT = m_SocketID;
-    m_pCC->setMSS(m_iMSS);
-    m_pCC->setMaxCWndSize(m_iFlowWindowSize);
-    m_pCC->setSndCurrSeqNo(m_iSndCurrSeqNo);
-    m_pCC->setRcvRate(m_iDeliveryRate);
-    m_pCC->setRTT(m_iRTT);
-    m_pCC->setBandwidth(m_iBandwidth);
-    m_pCC->init();
-
-    m_ullInterval = (uint64_t) (m_pCC->m_dPktSndPeriod * m_ullCPUFrequency);
-    m_dCongestionWindow = m_pCC->m_dCWndSize;
+    initCC();
 
     m_pPeerAddr = (AF_INET == m_iIPversion) ? (sockaddr*) new sockaddr_in : (sockaddr*) new sockaddr_in6;
     memcpy(m_pPeerAddr, peer, (AF_INET == m_iIPversion) ? sizeof(sockaddr_in) : sizeof(sockaddr_in6));

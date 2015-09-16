@@ -147,6 +147,8 @@ class CUDT {
 
     void connect(const sockaddr* peer);
 
+    void initCC();
+
     // Functionality:
     //    Process the response handshake packet.
     // Parameters:
