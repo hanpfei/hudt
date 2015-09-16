@@ -138,6 +138,8 @@ class CUDT {
 
     void listen();
 
+    void initISN();
+
     // Functionality:
     //    Connect to a UDT entity listening at address "peer".
     // Parameters:
@@ -148,6 +150,8 @@ class CUDT {
     void connect(const sockaddr* peer);
 
     void initCC();
+
+    void prepareAllDataStructures();
 
     // Functionality:
     //    Process the response handshake packet.

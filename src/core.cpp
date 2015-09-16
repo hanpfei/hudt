@@ -556,6 +556,15 @@ void CUDT::listen() {
     m_bListening = true;
 }
 
+void CUDT::initISN() {
+    m_iLastDecSeq = m_iISN - 1;
+    m_iSndLastAck = m_iISN;
+    m_iSndLastDataAck = m_iISN;
+    m_iSndCurrSeqNo = m_iISN - 1;
+    m_iSndLastAck2 = m_iISN;
+    m_ullSndLastAck2Time = CTimer::getTime();
+}
+
 void CUDT::connect(const sockaddr* serv_addr) {
     CGuard cg(m_ConnectionLock);
 
@@ -594,12 +603,7 @@ void CUDT::connect(const sockaddr* serv_addr) {
     srand((unsigned int) CTimer::getTime());
     m_iISN = m_ConnReq.m_iISN = (int32_t) (CSeqNo::m_iMaxSeqNo * (double(rand()) / RAND_MAX));
 
-    m_iLastDecSeq = m_iISN - 1;
-    m_iSndLastAck = m_iISN;
-    m_iSndLastDataAck = m_iISN;
-    m_iSndCurrSeqNo = m_iISN - 1;
-    m_iSndLastAck2 = m_iISN;
-    m_ullSndLastAck2Time = CTimer::getTime();
+    initISN();
 
     // Inform the server my configurations.
     CPacket request;
@@ -687,6 +691,22 @@ void CUDT::initCC() {
     m_dCongestionWindow = m_pCC->m_dCWndSize;
 }
 
+void CUDT::prepareAllDataStructures() {
+    // Prepare all data structures
+    try {
+        m_pSndBuffer = new CSndBuffer(32, m_iPayloadSize);
+        m_pRcvBuffer = new CRcvBuffer(&(m_pRcvQueue->m_UnitQueue), m_iRcvBufSize);
+        // after introducing lite ACK, the sndlosslist may not be cleared in time, so it requires twice space.
+        m_pSndLossList = new CSndLossList(m_iFlowWindowSize * 2);
+        m_pRcvLossList = new CRcvLossList(m_iFlightFlagSize);
+        m_pACKWindow = new CACKWindow(1024);
+        m_pRcvTimeWindow = new CPktTimeWindow(16, 64);
+        m_pSndTimeWindow = new CPktTimeWindow();
+    } catch (...) {
+        throw CUDTException(3, 2, 0);
+    }
+}
+
 int CUDT::connect(const CPacket& response) throw () {
     // this is the 2nd half of a connection request. If the connection is setup successfully this returns 0.
     // returning -1 means there is an error.
@@ -744,19 +764,7 @@ int CUDT::connect(const CPacket& response) throw () {
     m_PeerID = m_ConnRes.m_iID;
     memcpy(m_piSelfIP, m_ConnRes.m_piPeerIP, 16);
 
-    // Prepare all data structures
-    try {
-        m_pSndBuffer = new CSndBuffer(32, m_iPayloadSize);
-        m_pRcvBuffer = new CRcvBuffer(&(m_pRcvQueue->m_UnitQueue), m_iRcvBufSize);
-        // after introducing lite ACK, the sndlosslist may not be cleared in time, so it requires twice space.
-        m_pSndLossList = new CSndLossList(m_iFlowWindowSize * 2);
-        m_pRcvLossList = new CRcvLossList(m_iFlightFlagSize);
-        m_pACKWindow = new CACKWindow(1024);
-        m_pRcvTimeWindow = new CPktTimeWindow(16, 64);
-        m_pSndTimeWindow = new CPktTimeWindow();
-    } catch (...) {
-        throw CUDTException(3, 2, 0);
-    }
+    prepareAllDataStructures();
 
     CInfoBlock ib;
     ib.m_iIPversion = m_iIPversion;
@@ -810,12 +818,7 @@ void CUDT::connect(const sockaddr* peer, CHandShake* hs) {
     // use peer's ISN and send it back for security check
     m_iISN = hs->m_iISN;
 
-    m_iLastDecSeq = m_iISN - 1;
-    m_iSndLastAck = m_iISN;
-    m_iSndLastDataAck = m_iISN;
-    m_iSndCurrSeqNo = m_iISN - 1;
-    m_iSndLastAck2 = m_iISN;
-    m_ullSndLastAck2Time = CTimer::getTime();
+    initISN();
 
     // this is a reponse handshake
     hs->m_iReqType = -1;
@@ -827,18 +830,7 @@ void CUDT::connect(const sockaddr* peer, CHandShake* hs) {
     m_iPktSize = m_iMSS - 28;
     m_iPayloadSize = m_iPktSize - CPacket::m_iPktHdrSize;
 
-    // Prepare all structures
-    try {
-        m_pSndBuffer = new CSndBuffer(32, m_iPayloadSize);
-        m_pRcvBuffer = new CRcvBuffer(&(m_pRcvQueue->m_UnitQueue), m_iRcvBufSize);
-        m_pSndLossList = new CSndLossList(m_iFlowWindowSize * 2);
-        m_pRcvLossList = new CRcvLossList(m_iFlightFlagSize);
-        m_pACKWindow = new CACKWindow(1024);
-        m_pRcvTimeWindow = new CPktTimeWindow(16, 64);
-        m_pSndTimeWindow = new CPktTimeWindow();
-    } catch (...) {
-        throw CUDTException(3, 2, 0);
-    }
+    prepareAllDataStructures();
 
     CInfoBlock ib;
     ib.m_iIPversion = m_iIPversion;
